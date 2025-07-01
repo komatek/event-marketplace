@@ -46,7 +46,7 @@ public class EventMapper {
             PriceRange priceRange = calculatePriceRange(plan.zones());
 
             return new Event(
-                    UUID.nameUUIDFromBytes(plan.planId().getBytes()),
+                    UUID.randomUUID(), // ✅ ALWAYS UNIQUE
                     basePlan.title(),
                     startDateTime.toLocalDate(),
                     startDateTime.toLocalTime(),

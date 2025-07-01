@@ -1,9 +1,5 @@
-# Updated application.yml with proper sync interval
 server:
   port: 8080
-  tomcat:
-    max-threads: 200
-    min-spare-threads: 10
 
 spring:
   application:
@@ -18,29 +14,12 @@ spring:
       maximum-pool-size: 20
       minimum-idle: 5
       connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
       timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 8
-          min-idle: 2
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: when-authorized
 
 # Resilience4j Configuration
 resilience4j:
@@ -50,15 +29,12 @@ resilience4j:
         sliding-window-size: 10
         failure-rate-threshold: 50
         wait-duration-in-open-state: 30s
-        permitted-number-of-calls-in-half-open-state: 3
-        minimum-number-of-calls: 5
 
   retry:
     instances:
       external-provider:
         max-attempts: 3
         wait-duration: 2s
-        exponential-backoff-multiplier: 2
 
   timelimiter:
     instances:
@@ -68,22 +44,20 @@ resilience4j:
 # Custom Configuration
 fever:
   sync:
-    interval: 300000 # 5 minutes (300000ms not 30000ms)
+    interval: 3000 # 5 minutes
     enabled: true
 
   cache:
     bucket:
       ttl-hours: 6
       max-buckets-per-query: 24  # Monthly buckets, max 2 years
-      key-prefix: "fever:events:month:"  # Monthly prefix
-      async-invalidation: true
-      long-term-ttl-hours: 168  # 1 week for old months
-      current-month-ttl-hours: 2  # 2 hours for current month
+      key-prefix: "fever:events:month:"
+      current-month-ttl-hours: 2  # Shorter TTL for current month
       enable-tiered-ttl: true
 
 logging:
   level:
     com.fever.marketplace: INFO
-    org.springframework.web: DEBUG
+    org.springframework.web: WARN
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

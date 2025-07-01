@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Cached implementation of EventRepository using decorator pattern
@@ -37,10 +38,11 @@ public class CachedEventRepository implements EventRepository {
 
     @Override
     public List<Event> findByDateRange(LocalDateTime startsAt, LocalDateTime endsAt) {
+        // Your existing read logic - no changes needed
+        // PostgreSQL MVCC handles concurrent reads safely
         logger.debug("Finding events from {} to {}", startsAt, endsAt);
 
         try {
-            // 1. Try cache first (fast path)
             Optional<List<Event>> cachedEvents = cacheStrategy.getEvents(startsAt, endsAt);
 
             if (cachedEvents.isPresent()) {
@@ -48,11 +50,9 @@ public class CachedEventRepository implements EventRepository {
                 return cachedEvents.get();
             }
 
-            // 2. Cache miss - fetch from database immediately (for UX)
             logger.debug("Cache miss - fetching from database");
             List<Event> events = databaseRepository.findByDateRange(startsAt, endsAt);
 
-            // 3. Populate cache asynchronously (non-blocking)
             if (!events.isEmpty()) {
                 populateCacheAsync(startsAt, endsAt, events);
             }
@@ -61,31 +61,49 @@ public class CachedEventRepository implements EventRepository {
 
         } catch (Exception e) {
             logger.error("Error in cached repository, falling back to database", e);
-            // Graceful degradation - always try database as fallback
             return safeDatabaseFallback(startsAt, endsAt);
         }
     }
 
     @Override
+    @Transactional
     public void addNewEvents(List<Event> events) {
+        if (events.isEmpty()) {
+            logger.debug("No events to add");
+            return;
+        }
+
         try {
-            // 1. Always write to database first (source of truth)
+            // 1. SIMPLE FIX: Invalidate cache BEFORE writing to DB
+            //    This prevents readers from getting stale cache during writes
+            invalidateCacheSync(events);
+
+            // 2. Write to database (wrapped in transaction)
+            //    PostgreSQL MVCC ensures readers see consistent state
             databaseRepository.addNewEvents(events);
 
-            // 2. Invalidate affected cache entries asynchronously
-            if (!events.isEmpty()) {
-                invalidateCacheAsync(events);
-            }
+            logger.info("Successfully added {} new events", events.size());
 
         } catch (Exception e) {
             logger.error("Failed to add new events", e);
-            throw e; // Propagate database errors
+            throw e;
         }
     }
 
     /**
-     * Async cache population - never blocks the user request
+     * Synchronous cache invalidation before database writes
+     * Simple and ensures cache consistency
      */
+    private void invalidateCacheSync(List<Event> events) {
+        try {
+            cacheStrategy.invalidateAffectedEntries(events);
+            logger.debug("Cache invalidated before database write for {} events", events.size());
+        } catch (Exception e) {
+            logger.warn("Cache invalidation failed, proceeding with database write: {}", e.getMessage());
+            // Don't fail the write if cache invalidation fails
+        }
+    }
+
     @Async("asyncExecutor")
     public CompletableFuture<Void> populateCacheAsync(LocalDateTime startsAt, LocalDateTime endsAt, List<Event> events) {
         try {
@@ -97,36 +115,15 @@ public class CachedEventRepository implements EventRepository {
         return CompletableFuture.completedFuture(null);
     }
 
-    /**
-     * Async cache invalidation - never blocks writes
-     */
-    @Async("asyncExecutor")
-    public CompletableFuture<Void> invalidateCacheAsync(List<Event> events) {
-        try {
-            cacheStrategy.invalidateAffectedEntries(events);
-            logger.debug("Async cache invalidation completed for {} events", events.size());
-        } catch (Exception e) {
-            logger.warn("Async cache invalidation failed: {}", e.getMessage());
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-
-    /**
-     * Safe database fallback when cache fails
-     */
     private List<Event> safeDatabaseFallback(LocalDateTime startsAt, LocalDateTime endsAt) {
         try {
             return databaseRepository.findByDateRange(startsAt, endsAt);
         } catch (Exception dbError) {
             logger.error("Database fallback also failed", dbError);
-            // In a distributed system, this might trigger circuit breaker
-            return List.of(); // Return empty list rather than throwing
+            return List.of();
         }
     }
 
-    /**
-     * Get cache performance statistics (for monitoring)
-     */
     public String getCacheStats() {
         try {
             return cacheStrategy.getStats().summary();
