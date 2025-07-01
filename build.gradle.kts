@@ -27,6 +27,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // Retrofit core
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+
+    // XML converter (for SimpleXML)
+    implementation("com.squareup.retrofit2:converter-simplexml:2.11.0")
+
     // JSON/XML Processing
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
@@ -54,7 +60,6 @@ dependencies {
     // Embedded Redis (consider replacing in long term)
     testImplementation("it.ozimov:embedded-redis:0.7.3")
 }
-
 
 tasks.withType<Test> {
     useJUnitPlatform()
