@@ -75,7 +75,7 @@ resilience4j:
 # Custom Configuration
 fever:
   sync:
-    interval: 300000 # 5 minutes
+    interval: 30000 # 5 minutes
     enabled: true
 
   cache:

@@ -5,6 +5,7 @@ import com.fever.marketplace.domain.port.out.EventRepository;
 import com.fever.marketplace.infrastructure.cache.EventCacheStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
@@ -15,8 +16,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Cached implementation of EventRepository with async cache population
- * Ensures UX is never impacted by cache operations
+ * Cached implementation of EventRepository using decorator pattern
+ * Transparently adds caching to any EventRepository implementation
  */
 @Repository
 @Primary
@@ -27,8 +28,9 @@ public class CachedEventRepository implements EventRepository {
     private final EventRepository databaseRepository;
     private final EventCacheStrategy cacheStrategy;
 
-    public CachedEventRepository(EventRepository databaseRepository,
-                                 EventCacheStrategy cacheStrategy) {
+    public CachedEventRepository(
+            EventRepository databaseRepository,
+            EventCacheStrategy cacheStrategy) {
         this.databaseRepository = databaseRepository;
         this.cacheStrategy = cacheStrategy;
     }
@@ -85,28 +87,28 @@ public class CachedEventRepository implements EventRepository {
      * Async cache population - never blocks the user request
      */
     @Async("asyncExecutor")
-    public void populateCacheAsync(LocalDateTime startsAt, LocalDateTime endsAt, List<Event> events) {
+    public CompletableFuture<Void> populateCacheAsync(LocalDateTime startsAt, LocalDateTime endsAt, List<Event> events) {
         try {
             cacheStrategy.putEvents(startsAt, endsAt, events);
             logger.debug("Async cache population completed for {} events", events.size());
         } catch (Exception e) {
             logger.warn("Async cache population failed: {}", e.getMessage());
         }
-        CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     /**
      * Async cache invalidation - never blocks writes
      */
     @Async("asyncExecutor")
-    public void invalidateCacheAsync(List<Event> events) {
+    public CompletableFuture<Void> invalidateCacheAsync(List<Event> events) {
         try {
             cacheStrategy.invalidateAffectedEntries(events);
             logger.debug("Async cache invalidation completed for {} events", events.size());
         } catch (Exception e) {
             logger.warn("Async cache invalidation failed: {}", e.getMessage());
         }
-        CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     /**

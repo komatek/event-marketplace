@@ -1,9 +1,11 @@
 package com.fever.marketplace.infrastructure.adapter.provider.xml;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record BasePlanXml(
         @JacksonXmlProperty(isAttribute = true, localName = "base_plan_id")
         String basePlanId,

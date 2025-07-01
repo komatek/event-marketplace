@@ -9,13 +9,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.util.Collections;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handles individual bucket operations
- * Separated from main cache strategy for better testability
+ * Enhanced bucket operations with intelligent TTL management
+ * Optimized for monthly bucket strategy with tiered caching
  */
 @Component
 public class BucketOperations {
@@ -27,78 +28,121 @@ public class BucketOperations {
     private final BucketCacheConfig config;
 
     public BucketOperations(RedisTemplate<String, String> redisTemplate,
-                            ObjectMapper objectMapper,
-                            BucketCacheConfig config) {
+                                    ObjectMapper objectMapper,
+                                    BucketCacheConfig config) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.config = config;
     }
 
     /**
-     * Get events from a specific bucket
+     * Get events from a specific monthly bucket
      */
-    public List<Event> getBucketEvents(LocalDate bucket) {
+    public List<Event> getBucketEvents(LocalDate bucketKey) {
         try {
-            String cacheKey = generateBucketKey(bucket);
+            String cacheKey = generateBucketKey(bucketKey);
             String cachedJson = redisTemplate.opsForValue().get(cacheKey);
 
             if (cachedJson != null && !cachedJson.isEmpty()) {
                 List<Event> events = objectMapper.readValue(cachedJson, new TypeReference<List<Event>>() {});
-                logger.debug("Cache hit for bucket {}: {} events", bucket, events.size());
+                logger.debug("Cache hit for bucket {}: {} events", bucketKey, events.size());
                 return events;
             }
 
             return null; // Cache miss
 
         } catch (Exception e) {
-            logger.warn("Failed to get bucket {}: {}", bucket, e.getMessage());
+            logger.warn("Failed to get bucket {}: {}", bucketKey, e.getMessage());
             return null;
         }
     }
 
     /**
-     * Store events in a specific bucket
+     * Store events in a specific monthly bucket with intelligent TTL
      */
-    public void putBucketEvents(LocalDate bucket, List<Event> events) {
+    public void putBucketEvents(LocalDate bucketKey, List<Event> events) {
         try {
-            String cacheKey = generateBucketKey(bucket);
+            String cacheKey = generateBucketKey(bucketKey);
             String json = objectMapper.writeValueAsString(events);
 
-            redisTemplate.opsForValue().set(cacheKey, json, config.ttlHours(), TimeUnit.HOURS);
+            // Calculate appropriate TTL based on bucket age
+            int ttlHours = calculateTtlForBucket(bucketKey);
 
-            logger.debug("Cached bucket {} with {} events (TTL: {}h)",
-                    bucket, events.size(), config.ttlHours());
+            redisTemplate.opsForValue().set(cacheKey, json, ttlHours, TimeUnit.HOURS);
+
+            logger.debug("Cached monthly bucket {} with {} events (TTL: {}h)",
+                    YearMonth.from(bucketKey), events.size(), ttlHours);
 
         } catch (Exception e) {
-            logger.warn("Failed to cache bucket {}: {}", bucket, e.getMessage());
+            logger.warn("Failed to cache bucket {}: {}", bucketKey, e.getMessage());
         }
     }
 
     /**
-     * Remove a specific bucket from cache
+     * Remove a specific monthly bucket from cache
      */
-    public boolean invalidateBucket(LocalDate bucket) {
+    public boolean invalidateBucket(LocalDate bucketKey) {
         try {
-            String cacheKey = generateBucketKey(bucket);
+            String cacheKey = generateBucketKey(bucketKey);
             Boolean deleted = redisTemplate.delete(cacheKey);
 
             if (Boolean.TRUE.equals(deleted)) {
-                logger.debug("Invalidated bucket: {}", bucket);
+                logger.debug("Invalidated monthly bucket: {}", YearMonth.from(bucketKey));
                 return true;
             }
 
             return false;
 
         } catch (Exception e) {
-            logger.warn("Failed to invalidate bucket {}: {}", bucket, e.getMessage());
+            logger.warn("Failed to invalidate bucket {}: {}", bucketKey, e.getMessage());
             return false;
         }
     }
 
     /**
-     * Generate cache key for bucket
+     * Get approximate count of cached monthly buckets
      */
-    private String generateBucketKey(LocalDate bucket) {
-        return config.keyPrefix() + bucket.toString();
+    public int getCachedBucketCount() {
+        try {
+            String pattern = config.keyPrefix() + "*";
+            var keys = redisTemplate.keys(pattern);
+            return keys != null ? keys.size() : 0;
+        } catch (Exception e) {
+            logger.warn("Failed to count cached buckets: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Generate cache key for monthly bucket
+     */
+    private String generateBucketKey(LocalDate bucketKey) {
+        // Ensure we're using first day of month for consistency
+        YearMonth month = YearMonth.from(bucketKey);
+        return config.keyPrefix() + month.toString(); // e.g., "fever:events:month:2024-12"
+    }
+
+    /**
+     * Calculate TTL based on bucket age using tiered strategy
+     */
+    private int calculateTtlForBucket(LocalDate bucketKey) {
+        if (!config.enableTieredTtl()) {
+            return config.ttlHours();
+        }
+
+        YearMonth bucketMonth = YearMonth.from(bucketKey);
+        YearMonth currentMonth = YearMonth.now();
+        long monthsAgo = ChronoUnit.MONTHS.between(bucketMonth, currentMonth);
+
+        if (monthsAgo == 0) {
+            // Current month: shorter TTL (more dynamic, frequently changing)
+            return config.currentMonthTtlHours();
+        } else if (monthsAgo <= 3) {
+            // Recent months (1-3 months ago): normal TTL
+            return config.ttlHours();
+        } else {
+            // Older months (> 3 months ago): longer TTL (less likely to change)
+            return config.longTermTtlHours();
+        }
     }
 }

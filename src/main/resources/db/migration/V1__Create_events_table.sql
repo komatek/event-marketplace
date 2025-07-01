@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS events (
-                                      id UUID PRIMARY KEY,
-                                      title VARCHAR(255) NOT NULL,
+    id UUID PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
     start_date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_date DATE NOT NULL,

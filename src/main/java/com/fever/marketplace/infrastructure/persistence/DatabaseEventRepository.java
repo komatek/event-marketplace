@@ -18,7 +18,7 @@ import java.util.UUID;
  * Database implementation of EventRepository
  * Pure database operations without caching concerns
  */
-@Repository("databaseEventRepository")
+@Repository
 public class DatabaseEventRepository implements EventRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseEventRepository.class);
@@ -31,11 +31,12 @@ public class DatabaseEventRepository implements EventRepository {
 
     @Override
     public List<Event> findByDateRange(LocalDateTime startsAt, LocalDateTime endsAt) {
+        // Fixed SQL query - events that overlap with the requested range
         String sql = """
             SELECT id, title, start_date, start_time, end_date, end_time, min_price, max_price
             FROM events 
-            WHERE (start_date > ? OR (start_date = ? AND start_time >= ?))
-              AND (end_date < ? OR (end_date = ? AND end_time <= ?))
+            WHERE (start_date || ' ' || start_time)::timestamp <= ?
+              AND (end_date || ' ' || end_time)::timestamp >= ?
             ORDER BY start_date, start_time
             """;
 
@@ -50,12 +51,8 @@ public class DatabaseEventRepository implements EventRepository {
                             rs.getBigDecimal("min_price"),
                             rs.getBigDecimal("max_price")
                     ),
-                    startsAt.toLocalDate(),
-                    startsAt.toLocalDate(),
-                    startsAt.toLocalTime(),
-                    endsAt.toLocalDate(),
-                    endsAt.toLocalDate(),
-                    endsAt.toLocalTime());
+                    endsAt, // Events that start before our range ends
+                    startsAt); // Events that end after our range starts
 
         } catch (DataAccessException e) {
             logger.error("Database error while finding events by date range", e);
@@ -71,19 +68,19 @@ public class DatabaseEventRepository implements EventRepository {
             return;
         }
 
-        // Use INSERT IGNORE to handle duplicates gracefully
-        // MySQL will skip records that violate unique constraints
+        // Fixed SQL for PostgreSQL - use proper UUID casting
         String sql = """
-            INSERT IGNORE INTO events (
+            INSERT INTO events (
                 id, title, start_date, start_time, end_date, end_time, 
                 min_price, max_price, event_hash, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ) VALUES (?::uuid, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (event_hash) DO NOTHING
             """;
 
         try {
             List<Object[]> batch = events.stream()
                     .map(event -> new Object[] {
-                            event.id().toString(),
+                            event.id().toString(), // Convert UUID to string for PostgreSQL casting
                             event.title(),
                             event.startDate(),
                             event.startTime(),
@@ -102,15 +99,6 @@ public class DatabaseEventRepository implements EventRepository {
             logger.info("Database operation completed: {} new events added, {} duplicates skipped",
                     addedCount, skippedCount);
 
-            // Log statistics for monitoring
-            if (addedCount > 0) {
-                logger.info("Added {} new events to permanent storage", addedCount);
-            }
-
-            if (skippedCount > 0) {
-                logger.debug("Skipped {} duplicate events (already in database)", skippedCount);
-            }
-
         } catch (DataAccessException e) {
             logger.error("Error adding new events to database", e);
             throw new RuntimeException("Failed to add new events", e);
@@ -118,6 +106,11 @@ public class DatabaseEventRepository implements EventRepository {
     }
 
     private String generateEventHash(Event event) {
-        return (event.title() + "_" + event.startDate() + "_" + event.startTime()).hashCode() + "";
+        // Use a more robust hash that includes more fields
+        return String.valueOf((event.title() + "_" +
+                event.startDate() + "_" +
+                event.startTime() + "_" +
+                event.endDate() + "_" +
+                event.endTime()).hashCode());
     }
 }

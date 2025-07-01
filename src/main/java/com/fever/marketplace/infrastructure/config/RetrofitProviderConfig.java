@@ -1,10 +1,13 @@
-package com.fever.marketplace.infrastructure.adapter.config;
+package com.fever.marketplace.infrastructure.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fever.marketplace.infrastructure.adapter.provider.ExternalEventApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
-import retrofit2.converter.simplexml.SimpleXmlConverterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Configuration
 public class RetrofitProviderConfig {
@@ -13,9 +16,14 @@ public class RetrofitProviderConfig {
 
     @Bean
     public ExternalEventApi externalEventApi() {
+        // Create XML mapper for Retrofit with proper configuration
+        XmlMapper xmlMapper = new XmlMapper();
+        xmlMapper.registerModule(new JavaTimeModule());
+        xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .addConverterFactory(SimpleXmlConverterFactory.create())
+                .addConverterFactory(JacksonConverterFactory.create(xmlMapper))
                 .build();
 
         return retrofit.create(ExternalEventApi.class);
