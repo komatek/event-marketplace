@@ -29,7 +29,7 @@ public class CachedEventRepository implements EventRepository {
     private final EventCacheStrategy cacheStrategy;
 
     public CachedEventRepository(
-            EventRepository databaseRepository,
+            @Qualifier("databaseEventRepository") EventRepository databaseRepository,
             EventCacheStrategy cacheStrategy) {
         this.databaseRepository = databaseRepository;
         this.cacheStrategy = cacheStrategy;

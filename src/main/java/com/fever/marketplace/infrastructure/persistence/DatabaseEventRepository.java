@@ -4,6 +4,7 @@ import com.fever.marketplace.domain.model.Event;
 import com.fever.marketplace.domain.port.out.EventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -19,6 +20,7 @@ import java.util.UUID;
  * Pure database operations without caching concerns
  */
 @Repository
+@Qualifier("databaseEventRepository")
 public class DatabaseEventRepository implements EventRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseEventRepository.class);
@@ -35,8 +37,8 @@ public class DatabaseEventRepository implements EventRepository {
         String sql = """
             SELECT id, title, start_date, start_time, end_date, end_time, min_price, max_price
             FROM events 
-            WHERE (start_date || ' ' || start_time)::timestamp <= ?
-              AND (end_date || ' ' || end_time)::timestamp >= ?
+            WHERE (start_date + start_time) <= ?
+              AND (end_date + end_time) >= ?
             ORDER BY start_date, start_time
             """;
 

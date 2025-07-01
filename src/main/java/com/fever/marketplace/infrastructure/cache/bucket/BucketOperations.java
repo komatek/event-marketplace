@@ -44,7 +44,7 @@ public class BucketOperations {
             String cachedJson = redisTemplate.opsForValue().get(cacheKey);
 
             if (cachedJson != null && !cachedJson.isEmpty()) {
-                List<Event> events = objectMapper.readValue(cachedJson, new TypeReference<List<Event>>() {});
+                List<Event> events = objectMapper.readValue(cachedJson, new TypeReference<>() {});
                 logger.debug("Cache hit for bucket {}: {} events", bucketKey, events.size());
                 return events;
             }

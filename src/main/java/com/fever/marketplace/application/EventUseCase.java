@@ -19,6 +19,7 @@ public class EventUseCase implements FindEvents {
         this.eventRepository = eventRepository;
     }
 
+    @Override
     public List<Event> execute(LocalDateTime startsAt, LocalDateTime endsAt) {
         logger.debug("Searching events from {} to {}", startsAt, endsAt);
 
@@ -30,7 +31,7 @@ public class EventUseCase implements FindEvents {
 
         try {
             // Repository handles caching logic transparently
-            // This service remains stateless and focused on business logic
+            // This use case remains stateless and focused on business logic
             List<Event> events = eventRepository.findByDateRange(startsAt, endsAt);
 
             logger.debug("Found {} events in date range", events.size());

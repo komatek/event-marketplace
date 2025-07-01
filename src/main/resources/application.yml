@@ -1,3 +1,4 @@
+# Updated application.yml with proper sync interval
 server:
   port: 8080
   tomcat:
@@ -75,15 +76,18 @@ resilience4j:
 # Custom Configuration
 fever:
   sync:
-    interval: 30000 # 5 minutes
+    interval: 300000 # 5 minutes (300000ms not 30000ms)
     enabled: true
 
   cache:
     bucket:
       ttl-hours: 6
-      max-buckets-per-query: 180
-      key-prefix: "fever:events:bucket:"
+      max-buckets-per-query: 24  # Monthly buckets, max 2 years
+      key-prefix: "fever:events:month:"  # Monthly prefix
       async-invalidation: true
+      long-term-ttl-hours: 168  # 1 week for old months
+      current-month-ttl-hours: 2  # 2 hours for current month
+      enable-tiered-ttl: true
 
 logging:
   level:

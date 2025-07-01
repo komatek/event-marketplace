@@ -2,7 +2,7 @@ package com.fever.marketplace.infrastructure.cache;
 
 import com.fever.marketplace.domain.model.Event;
 import com.fever.marketplace.infrastructure.cache.bucket.BucketCacheConfig;
-import com.fever.marketplace.infrastructure.cache.bucket.EnhancedBucketOperations;
+import com.fever.marketplace.infrastructure.cache.bucket.BucketOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -31,7 +31,7 @@ public class MonthlyBucketCacheStrategy implements EventCacheStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(MonthlyBucketCacheStrategy.class);
 
-    private final EnhancedBucketOperations bucketOperations;
+    private final BucketOperations bucketOperations;
     private final BucketCacheConfig config;
 
     // Cache statistics
@@ -40,7 +40,7 @@ public class MonthlyBucketCacheStrategy implements EventCacheStrategy {
     private final AtomicLong errors = new AtomicLong();
     private final AtomicLong invalidations = new AtomicLong();
 
-    public MonthlyBucketCacheStrategy(EnhancedBucketOperations bucketOperations, BucketCacheConfig config) {
+    public MonthlyBucketCacheStrategy(BucketOperations bucketOperations, BucketCacheConfig config) {
         this.bucketOperations = bucketOperations;
         this.config = config;
     }
