@@ -20,18 +20,15 @@ repositories {
 dependencies {
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-cache")
 
     // Retrofit core
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
 
-    // XML converter (for SimpleXML)
-    implementation("com.squareup.retrofit2:converter-simplexml:2.11.0")
+    implementation("com.squareup.retrofit2:converter-jackson:2.11.0")
 
     // JSON/XML Processing
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -41,8 +38,8 @@ dependencies {
     // Database
     runtimeOnly("org.postgresql:postgresql")
 
-    // Connection Pooling
-    implementation("com.zaxxer:HikariCP")
+    // Add Flyway for database migrations
+    implementation("org.flywaydb:flyway-core")
 
     // Resilience (Resilience4j)
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
@@ -57,8 +54,9 @@ dependencies {
     testImplementation("org.testcontainers:redis")
     testImplementation("com.github.tomakehurst:wiremock-jre8:2.35.1")
 
-    // Embedded Redis (consider replacing in long term)
-    testImplementation("it.ozimov:embedded-redis:0.7.3")
+    // For tests - H2 database
+    testImplementation("com.h2database:h2")
+
 }
 
 tasks.withType<Test> {
