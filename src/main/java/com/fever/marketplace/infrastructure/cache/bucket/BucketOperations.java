@@ -104,7 +104,7 @@ public class BucketOperations {
      */
     public int getCachedBucketCount() {
         try {
-            String pattern = config.keyPrefix() + "*";
+            String pattern = config.getKeyPrefix() + "*";
             var keys = redisTemplate.keys(pattern);
             return keys != null ? keys.size() : 0;
         } catch (Exception e) {
@@ -119,15 +119,15 @@ public class BucketOperations {
     private String generateBucketKey(LocalDate bucketKey) {
         // Ensure we're using first day of month for consistency
         YearMonth month = YearMonth.from(bucketKey);
-        return config.keyPrefix() + month.toString(); // e.g., "fever:events:month:2024-12"
+        return config.getKeyPrefix() + month.toString(); // e.g., "fever:events:month:2024-12"
     }
 
     /**
      * Calculate TTL based on bucket age using tiered strategy
      */
     private int calculateTtlForBucket(LocalDate bucketKey) {
-        if (!config.enableTieredTtl()) {
-            return config.ttlHours();
+        if (!config.isEnableTieredTtl()) {
+            return config.getTtlHours();
         }
 
         YearMonth bucketMonth = YearMonth.from(bucketKey);
@@ -136,13 +136,13 @@ public class BucketOperations {
 
         if (monthsAgo == 0) {
             // Current month: shorter TTL (more dynamic, frequently changing)
-            return config.currentMonthTtlHours();
+            return config.getCurrentMonthTtlHours();
         } else if (monthsAgo <= 3) {
             // Recent months (1-3 months ago): normal TTL
-            return config.ttlHours();
+            return config.getTtlHours();
         } else {
             // Older months (> 3 months ago): longer TTL (less likely to change)
-            return config.longTermTtlHours();
+            return config.getLongTermTtlHours();
         }
     }
 }

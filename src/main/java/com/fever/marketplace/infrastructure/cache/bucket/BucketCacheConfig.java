@@ -12,41 +12,71 @@ import org.springframework.stereotype.Component;
 public class BucketCacheConfig {
 
     // Monthly bucket strategy: max 24 months = 24 cache keys
-    private int ttlHours; // 12 hours TTL for active months
+    private int ttlHours;
     private int maxBucketsPerQuery; // Max 2 years of data per query
-    private String keyPrefix = "fever:events:month:"; // Monthly buckets
-    private boolean asyncInvalidation = true; // Non-blocking cache updates
+    private String keyPrefix; // Monthly buckets
+    private boolean asyncInvalidation; // Non-blocking cache updates
 
-    private int longTermTtlHours = 168; // 1 week TTL for older months (> 6 months old)
-    private int currentMonthTtlHours = 2; // Shorter TTL for current month (more dynamic)
-    private boolean enableTieredTtl = true; // Different TTL based on month age
+    // Advanced configuration for performance tuning
+    private int longTermTtlHours; // 1 week TTL for older months (> 6 months old)
+    private int currentMonthTtlHours; // Shorter TTL for current month (more dynamic)
+    private boolean enableTieredTtl; // Different TTL based on month age
 
-
-    public int ttlHours() {
+    // Standard getters and setters
+    public int getTtlHours() {
         return ttlHours;
     }
 
-    public int maxBucketsPerQuery() {
+    public void setTtlHours(int ttlHours) {
+        this.ttlHours = ttlHours;
+    }
+
+    public int getMaxBucketsPerQuery() {
         return maxBucketsPerQuery;
     }
 
-    public String keyPrefix() {
+    public void setMaxBucketsPerQuery(int maxBucketsPerQuery) {
+        this.maxBucketsPerQuery = maxBucketsPerQuery;
+    }
+
+    public String getKeyPrefix() {
         return keyPrefix;
     }
 
-    public boolean asyncInvalidation() {
+    public void setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
+    }
+
+    public boolean isAsyncInvalidation() {
         return asyncInvalidation;
     }
 
-    public int longTermTtlHours() {
+    public void setAsyncInvalidation(boolean asyncInvalidation) {
+        this.asyncInvalidation = asyncInvalidation;
+    }
+
+    public int getLongTermTtlHours() {
         return longTermTtlHours;
     }
 
-    public int currentMonthTtlHours() {
+    public void setLongTermTtlHours(int longTermTtlHours) {
+        this.longTermTtlHours = longTermTtlHours;
+    }
+
+    public int getCurrentMonthTtlHours() {
         return currentMonthTtlHours;
     }
 
-    public boolean enableTieredTtl() {
+    public void setCurrentMonthTtlHours(int currentMonthTtlHours) {
+        this.currentMonthTtlHours = currentMonthTtlHours;
+    }
+
+    public boolean isEnableTieredTtl() {
         return enableTieredTtl;
     }
+
+    public void setEnableTieredTtl(boolean enableTieredTtl) {
+        this.enableTieredTtl = enableTieredTtl;
+    }
+
 }

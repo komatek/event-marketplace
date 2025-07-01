@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     id("org.springframework.boot") version "3.2.0"
     id("io.spring.dependency-management") version "1.1.4"
@@ -17,6 +19,7 @@ repositories {
     mavenCentral()
 }
 
+// Make sure this line has an opening brace {
 dependencies {
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -27,7 +30,6 @@ dependencies {
 
     // Retrofit core
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
-
     implementation("com.squareup.retrofit2:converter-jackson:2.11.0")
 
     // JSON/XML Processing
@@ -56,14 +58,25 @@ dependencies {
 
     // For tests - H2 database
     testImplementation("com.h2database:h2")
+}
 
+// Add source sets for Kotlin support
+sourceSets {
+    main {
+        java {
+            srcDirs("src/main/java")
+        }
+        kotlin {
+            srcDirs("src/main/kotlin")
+        }
+    }
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += "-Xjsr305=strict"
         jvmTarget = "21"

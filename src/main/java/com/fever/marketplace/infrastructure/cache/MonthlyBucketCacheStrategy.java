@@ -52,9 +52,9 @@ public class MonthlyBucketCacheStrategy implements EventCacheStrategy {
             List<YearMonth> requiredMonths = calculateRequiredMonths(startsAt, endsAt);
 
             // Check if query spans too many months (configurable limit)
-            if (requiredMonths.size() > config.maxBucketsPerQuery()) {
+            if (requiredMonths.size() > config.getMaxBucketsPerQuery()) {
                 logger.debug("Query spans {} months, exceeds max buckets ({}), skipping cache",
-                        requiredMonths.size(), config.maxBucketsPerQuery());
+                        requiredMonths.size(), config.getMaxBucketsPerQuery());
                 misses.incrementAndGet();
                 return Optional.empty();
             }
@@ -140,7 +140,7 @@ public class MonthlyBucketCacheStrategy implements EventCacheStrategy {
 
     @Override
     public void invalidateAffectedEntries(List<Event> newEvents) {
-        if (config.asyncInvalidation()) {
+        if (config.isAsyncInvalidation()) {
             invalidateAsync(newEvents);
         } else {
             performInvalidation(newEvents);
