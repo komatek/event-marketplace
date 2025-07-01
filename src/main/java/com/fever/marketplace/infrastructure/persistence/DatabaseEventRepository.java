@@ -1,7 +1,7 @@
 package com.fever.marketplace.infrastructure.persistence;
 
 import com.fever.marketplace.domain.model.Event;
-import com.fever.marketplace.domain.port.EventRepository;
+import com.fever.marketplace.domain.port.out.EventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;

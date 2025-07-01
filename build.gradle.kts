@@ -27,38 +27,34 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
-    // XML Processing
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
+    // JSON/XML Processing
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Database
-    runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql") // For production
+    runtimeOnly("org.postgresql:postgresql")
 
     // Connection Pooling
     implementation("com.zaxxer:HikariCP")
 
-    // Metrics and Monitoring
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("io.micrometer:micrometer-tracing-bridge-brave")
+    // Resilience (Resilience4j)
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+    implementation("io.github.resilience4j:resilience4j-reactor:2.2.0")
 
-    // Resilience
-    implementation("io.github.resilience4j:resilience4j-spring-boot3")
-    implementation("io.github.resilience4j:resilience4j-reactor")
-
-    // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-
-    // Test Dependencies
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Testing
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
+    }
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:redis")
-    testImplementation("com.github.tomakehurst:wiremock-jre8:2.35.0")
+    testImplementation("com.github.tomakehurst:wiremock-jre8:2.35.1")
+
+    // Embedded Redis (consider replacing in long term)
     testImplementation("it.ozimov:embedded-redis:0.7.3")
 }
+
 
 tasks.withType<Test> {
     useJUnitPlatform()

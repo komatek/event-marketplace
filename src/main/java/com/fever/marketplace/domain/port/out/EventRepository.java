@@ -1,4 +1,4 @@
-package com.fever.marketplace.domain.port;
+package com.fever.marketplace.domain.port.out;
 
 import com.fever.marketplace.domain.model.Event;
 import java.time.LocalDateTime;
