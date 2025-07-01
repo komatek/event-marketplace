@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  data:
+    redis:
+      host: localhost
+      port: 6370  # Different port for tests
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+fever:
+  sync:
+    enabled: false
+  cache:
+    bucket:
+      ttl-hours: 1
