@@ -20,7 +20,7 @@ Intelligent caching that buckets events by month with excellent performance char
 - **Partial Cache Hits**: Serves multi-month queries even with partial cache coverage
 - **Tiered TTL**: Current month (2h), recent months (6h), old months (7 days)
 - **Bounded Memory**: Memory usage scales with months, not events
-- **Synchronization for fresh data**: Every 30 seconds with external endpoint to populate database and cache
+- **Synchronize fresh data**: Every 30 seconds with external endpoint to populate database and cache
 
 Example: Query spans Nov-Jan, only November cached → returns November from cache + Dec/Jan from database.
 
