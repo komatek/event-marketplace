@@ -35,12 +35,14 @@ public class ExternalProviderClient implements ExternalEventProvider {
                 logger.debug("Fetching events from external provider via Retrofit");
                 var response = eventApi.fetchEvents().execute();
                 if (response.isSuccessful() && response.body() != null) {
-                    var basePlans = response.body().output().basePlans();
-                    return eventMapper.mapToOnlineEvents(basePlans);
-                } else {
-                    logger.warn("Empty or failed response from external provider");
-                    return Collections.emptyList();
+                    var output = response.body().output();
+                    if (output != null && output.basePlans() != null) {
+                        var basePlans = output.basePlans();
+                        return eventMapper.mapToOnlineEvents(basePlans);
+                    }
                 }
+                logger.warn("Empty or failed response from external provider");
+                return Collections.emptyList();
             } catch (Exception e) {
                 logger.error("Exception fetching events from provider: {}", e.getMessage());
                 throw new RuntimeException("Failed to fetch external events", e);
