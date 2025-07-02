@@ -8,18 +8,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.*;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
@@ -30,40 +22,19 @@ import java.util.concurrent.TimeUnit;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@Testcontainers
-@TestPropertySource(properties = {
-        "fever.sync.enabled=false",
-        "logging.level.com.fever.marketplace=DEBUG"
-})
+@SpringJUnitConfig(ExternalProviderClientIntegrationTest.TestConfig.class)
 class ExternalProviderClientIntegrationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("fever_test")
-            .withUsername("test")
-            .withPassword("test");
-
-    @Container
-    static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-            .withExposedPorts(6379);
 
     static WireMockServer wireMockServer;
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
-    }
-
     @TestConfiguration
+    @ComponentScan(basePackages = {
+            "com.fever.marketplace.infrastructure.adapter.mapper"
+    })
     static class TestConfig {
+
         @Bean
-        @Primary
-        public ExternalEventApi testExternalEventApi() {
+        public ExternalEventApi externalEventApi() {
             XmlMapper xmlMapper = new XmlMapper();
             xmlMapper.registerModule(new JavaTimeModule());
             xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -74,6 +45,18 @@ class ExternalProviderClientIntegrationTest {
                     .build();
 
             return retrofit.create(ExternalEventApi.class);
+        }
+
+        @Bean
+        public EventMapper eventMapper() {
+            return new EventMapper();
+        }
+
+        @Bean
+        public ExternalProviderClient externalProviderClient(
+                ExternalEventApi externalEventApi,
+                EventMapper eventMapper) {
+            return new ExternalProviderClient(externalEventApi, eventMapper);
         }
     }
 
@@ -121,7 +104,7 @@ class ExternalProviderClientIntegrationTest {
 
         // When
         ExternalProviderClient client = new ExternalProviderClient(
-                testExternalEventApi(),
+                createExternalEventApi(),
                 new EventMapper()
         );
 
@@ -136,7 +119,61 @@ class ExternalProviderClientIntegrationTest {
         verify(1, getRequestedFor(urlEqualTo("/api/events")));
     }
 
-    private ExternalEventApi testExternalEventApi() {
+    @Test
+    void fetchOnlineEvents_shouldHandleEmptyResponse() throws Exception {
+        // Given
+        String emptyXmlResponse = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <planList version="1.0">
+              <output>
+              </output>
+            </planList>
+            """;
+
+        stubFor(get(urlEqualTo("/api/events"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/xml")
+                        .withBody(emptyXmlResponse)));
+
+        // When
+        ExternalProviderClient client = new ExternalProviderClient(
+                createExternalEventApi(),
+                new EventMapper()
+        );
+
+        CompletableFuture<List<Event>> result = client.fetchOnlineEvents();
+        List<Event> events = result.get(10, TimeUnit.SECONDS);
+
+        // Then
+        assertThat(events).isEmpty();
+        verify(1, getRequestedFor(urlEqualTo("/api/events")));
+    }
+
+    @Test
+    void fetchOnlineEvents_shouldHandleErrorResponse() throws Exception {
+        // Given
+        stubFor(get(urlEqualTo("/api/events"))
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withBody("Internal Server Error")));
+
+        // When
+        ExternalProviderClient client = new ExternalProviderClient(
+                createExternalEventApi(),
+                new EventMapper()
+        );
+
+        CompletableFuture<List<Event>> result = client.fetchOnlineEvents();
+
+        // Then
+        List<Event> events = result.get(10, TimeUnit.SECONDS);
+        assertThat(events).isEmpty();
+
+        verify(1, getRequestedFor(urlEqualTo("/api/events")));
+    }
+
+    private ExternalEventApi createExternalEventApi() {
         XmlMapper xmlMapper = new XmlMapper();
         xmlMapper.registerModule(new JavaTimeModule());
         xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

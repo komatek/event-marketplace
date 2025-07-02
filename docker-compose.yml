@@ -46,6 +46,7 @@ services:
       DB_PASSWORD: feverpass
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fever_marketplace
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s

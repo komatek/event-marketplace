@@ -19,7 +19,6 @@ repositories {
     mavenCentral()
 }
 
-// Make sure this line has an opening brace {
 dependencies {
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -51,16 +50,23 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
+
+    // TestContainers BOM for version management
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.19.3"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:redis")
-    testImplementation("com.github.tomakehurst:wiremock-jre8:2.35.1")
+    testImplementation("org.testcontainers:testcontainers") // Core TestContainers
 
-    // For tests - H2 database
-    testImplementation("com.h2database:h2")
+    // WireMock for contract testing
+    testImplementation("com.github.tomakehurst:wiremock-jre8-standalone:2.35.1")
+
+    // AssertJ for better assertions
+    testImplementation("org.assertj:assertj-core")
+
+    // Awaitility for asynchronous testing
+    testImplementation("org.awaitility:awaitility:4.2.0")
 }
 
-// Add source sets for Kotlin support
 sourceSets {
     main {
         java {
