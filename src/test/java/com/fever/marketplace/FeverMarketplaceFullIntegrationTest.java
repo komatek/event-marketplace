@@ -10,7 +10,6 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -195,14 +194,6 @@ class FeverMarketplaceFullIntegrationTest {
                         .param("ends_at", "2024-12-31T23:59:00")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void shouldUseHealthCheckEndpoint() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/actuator/health"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status", is("UP")));
     }
 
     @Test

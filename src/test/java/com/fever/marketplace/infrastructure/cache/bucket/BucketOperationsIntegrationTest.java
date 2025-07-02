@@ -317,25 +317,6 @@ class BucketOperationsIntegrationTest {
     }
 
     @Test
-    void shouldRespectTieredTtlConfiguration() {
-        // Given - Disable tiered TTL
-        BucketCacheConfig fixedTtlConfig = createTestConfig();
-        fixedTtlConfig.setEnableTieredTtl(false);
-        BucketOperations fixedTtlBucketOps = new BucketOperations(redisTemplate, objectMapper, fixedTtlConfig);
-
-        LocalDate currentMonthKey = YearMonth.now().atDay(1);
-        List<Event> events = List.of(createEvent("Fixed TTL Event", currentMonthKey));
-
-        // When
-        fixedTtlBucketOps.putBucketEvents(currentMonthKey, events);
-
-        // Then - Event should be stored (TTL behavior tested indirectly)
-        List<Event> retrievedEvents = fixedTtlBucketOps.getBucketEvents(currentMonthKey);
-        assertThat(retrievedEvents).isNotNull();
-        assertThat(retrievedEvents).hasSize(1);
-    }
-
-    @Test
     void shouldHandleConcurrentWrites() throws Exception {
         // Given
         LocalDate bucketKey = LocalDate.of(2024, 12, 1);

@@ -83,7 +83,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should find events by date range")
     void shouldFindEventsByDateRange() {
         // Given - Insert test data directly into database
         insertEventDirectly(createEventWithDate(LocalDate.of(2024, 12, 15)));
@@ -103,7 +102,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return events ordered by date and time")
     void shouldReturnEventsOrderedByDateTime() {
         // Given - Insert test data directly
         Event laterEvent = createEventWithDateTime(LocalDate.of(2024, 12, 15), LocalTime.of(22, 0));
@@ -128,7 +126,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should handle duplicate events using event hash")
     void shouldAddNewEventsAndHandleDuplicates() {
         // Given
         Event event1 = createEventWithTitle("Concert A");
@@ -155,7 +152,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should handle events spanning multiple days")
     void shouldHandleEventsSpanningMultipleDays() {
         // Given - Insert multi-day event directly
         Event multiDayEvent = new Event(
@@ -185,7 +181,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return empty list for no matches")
     void shouldReturnEmptyListForNoMatches() {
         // Given - Insert event outside query range
         Event event = createEventWithDate(LocalDate.of(2024, 12, 15));
@@ -202,7 +197,6 @@ class DatabaseEventRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should handle large event batch successfully")
     void shouldHandleLargeEventBatch() {
         // Given
         List<Event> largeEventList = List.of(
@@ -225,7 +219,6 @@ class DatabaseEventRepositoryIntegrationTest {
         assertThat(allEvents).hasSize(5);
     }
 
-    // Helper methods
     private void insertEventDirectly(Event event) {
         String sql = """
             INSERT INTO events (

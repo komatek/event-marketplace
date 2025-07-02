@@ -115,10 +115,6 @@ class EventControllerContractTest {
 
     @Test
     void shouldReturnBadRequestWhenStartDateIsAfterEndDate() throws Exception {
-        // Given
-        LocalDateTime startsAt = LocalDateTime.of(2024, 12, 31, 23, 59);
-        LocalDateTime endsAt = LocalDateTime.of(2024, 12, 1, 10, 0);
-
         // When & Then
         mockMvc.perform(get("/search")
                         .param("starts_at", "2024-12-31T23:59:00")
@@ -184,7 +180,7 @@ class EventControllerContractTest {
         List<Event> mockEvents = List.of();
         for (int i = 1; i <= 100; i++) {
             mockEvents = new java.util.ArrayList<>(mockEvents);
-            ((java.util.ArrayList<Event>) mockEvents).add(
+            mockEvents.add(
                     createEventWithTitle("Event " + i, LocalDate.of(2024, 12, i % 28 + 1))
             );
         }
